@@ -1,190 +1,195 @@
 #include <iostream>
-#include <fstream>
-#include <vector>
 #include <string>
+#include <vector>
 using namespace std;
-
-// -------------------- User Class --------------------
-class User {
+// Base class: Person
+class Person {
+protected:
+string name;
+string id;
 public:
-    string username;
-    string pin;
-    double balance;
-
-    User() {}
-    User(string u, string p, double b) : username(u), pin(p), balance(b) {}
-
-    void displayBalance() const {
-        cout << "Your current balance: " << balance << endl;
-    }
-
-    void deposit(double amt) {
-        balance += amt;
-        cout << "Deposited successfully! New balance: " << balance << endl;
-    }
-
-    void withdraw(double amt) {
-        if (amt > balance) {
-            cout << "Insufficient balance!\n";
-        } else {
-            balance -= amt;
-            cout << "Withdrawal successful! New balance: " << balance << endl;
-        }
-    }
-};
-
-// -------------------- ATM System Class --------------------
-class ATMSystem {
-private:
-    vector<User> users;
-
-public:
-    ATMSystem() {
-        loadUsers();
-    }
-
-    void loadUsers() {
-        users.clear();
-        ifstream file("users.txt");
-        if (!file) return; // if file not found
-
-        User u;
-        while (file >> u.username >> u.pin >> u.balance) {
-            users.push_back(u);
-        }
-        file.close();
-    }
-
-    void saveUsers() {
-        ofstream file("users.txt");
-        for (auto &u : users) {
-            file << u.username << " " << u.pin << " " << u.balance << endl;
-        }
-        file.close();
-    }
-
-    int findUser(const string &uname, const string &pin) {
-        for (int i = 0; i < users.size(); i++) {
-            if (users[i].username == uname && users[i].pin == pin)
-                return i;
-        }
-        return -1;
-    }
-
-    void registerUser() {
-        string uname, pin;
-        double initialDeposit;
-
-        cout << "\n=== Create New Account ===\n";
-        cout << "Enter new username: ";
-        cin >> uname;
-
-        for (auto &u : users) {
-            if (u.username == uname) {
-                cout << "Username already exists! Try another.\n";
-                return;
-            }
-        }
-
-        cout << "Set 4-digit PIN: ";
-        cin >> pin;
-        cout << "Enter initial deposit: ";
-        cin >> initialDeposit;
-
-        users.push_back(User(uname, pin, initialDeposit));
-        saveUsers();
-
-        cout << "Account created successfully!\n";
-    }
-
-    void atmMenu(int idx) {
-        int choice;
-        do {
-            cout << "\n----- ATM Menu -----\n";
-            cout << "1. Balance Inquiry\n";
-            cout << "2. Deposit\n";
-            cout << "3. Withdraw\n";
-            cout << "4. Exit\n";
-            cout << "Enter choice: ";
-            cin >> choice;
-
-            switch (choice) {
-                case 1:
-                    users[idx].displayBalance();
-                    break;
-                case 2: {
-                    double amt;
-                    cout << "Enter deposit amount: ";
-                    cin >> amt;
-                    users[idx].deposit(amt);
-                    saveUsers();
-                    break;
-                }
-                case 3: {
-                    double amt;
-                    cout << "Enter withdrawal amount: ";
-                    cin >> amt;
-                    users[idx].withdraw(amt);
-                    saveUsers();
-                    break;
-                }
-                case 4:
-                    cout << "Logging out...\n";
-                    saveUsers();
-                    break;
-                default:
-                    cout << "Invalid choice!\n";
-            }
-        } while (choice != 4);
-    }
-
-    void login() {
-        string uname, pin;
-        cout << "\nEnter Username: ";
-        cin >> uname;
-        cout << "Enter PIN: ";
-        cin >> pin;
-
-        loadUsers();
-        int idx = findUser(uname, pin);
-        if (idx != -1) {
-            cout << "\nLogin Successful!\n";
-            atmMenu(idx);
-        } else {
-            cout << "Invalid Username or PIN!\n";
-        }
-    }
-
-    void start() {
-        int choice;
-        do {
-            cout << "\n==== Welcome to ATM ====\n";
-            cout << "1. Login\n";
-            cout << "2. Register (New User)\n";
-            cout << "3. Exit\n";
-            cout << "Enter choice: ";
-            cin >> choice;
-
-            switch (choice) {
-                case 1:
-                    login();
-                    break;
-                case 2:
-                    registerUser();
-                    break;
-                case 3:
-                    cout << "Exiting ATM... Goodbye!\n";
-                    break;
-                default:
-                    cout << "Invalid choice!\n";
-            }
-        } while (choice != 3);
-    }
-};
-
-// -------------------- Main Function --------------------
-int main() {
-    ATMSystem atm;
-    atm.start();
-    return 0;
+Person(string n, string i) : name(n), id(i) {}
+virtual void showInfo() const {  // mark as const
+cout << "Name: " << name << "\nID: " << id << endl;
 }
+};
+// Derived class: User
+class User : public Person {
+private:
+string pin;
+double balance;
+public:
+User(string n, string i, string p, double b) : Person(n, i), pin(p), balance(b) {}
+void showInfo() const override {
+cout << "User Info:\n";
+cout << "Name: " << name << "\nID: " << id << "\nBalance: $" << balance << endl;
+}
+bool verifyPin(string enteredPin) {
+return pin == enteredPin;
+}
+void deposit(double amount) {
+balance += amount;
+cout << "Deposited $" << amount << ". New Balance: $" << balance << endl;
+}
+void withdraw(double amount) {
+if (amount > balance)
+cout << "Insufficient balance!" << endl;
+else {
+balance -= amount;
+cout << "Withdrawn $" << amount << ". Remaining Balance: $" << balance << endl;
+}
+}
+void changeName(string newName) {
+if (!newName.empty()) {
+newName[0] = toupper(newName[0]);
+for (size_t i = 1; i < newName.length(); i++)
+newName[i] = tolower(newName[i]);
+}
+name = newName;
+cout << "Name changed successfully to " << name << endl;
+}
+
+void resetBalance(double newBalance) {
+balance = newBalance;
+cout << "Balance reset to $" << balance << endl;
+}
+
+string getID() const { return id; }
+};
+// Derived class: Admin
+class Admin : public Person {
+public:
+Admin(string n, string i) : Person(n, i) {}
+
+void showInfo() const override {  // mark as const
+cout << "Admin Info:\n";
+cout << "Name: " << name << "\nID: " << id << endl;
+}
+
+void showAllUsers(const vector<User> &users) const { // mark as const
+cout << "\n---All Users---\n";
+for (const auto &u : users) {
+u.showInfo();
+cout << endl;
+}
+}
+void resetUserBalance(vector<User> &users, string userID, double newBalance) {
+for (auto &u : users) {
+if (u.getID() == userID) {
+u.resetBalance(newBalance);
+return;
+}
+}
+cout << "User not found!\n";
+}
+};
+int main() {
+vector<User> users;
+users.push_back(User("Jasleen", "U1001", "1234", 500));
+users.push_back(User("Rahul", "U1002", "5678", 800));
+
+Admin admin("Manager", "A001");
+int userType;
+cout << "Welcome to ATM Simulator!\n";
+cout << "Login as User(1) or Admin(2): ";
+cin >> userType;
+
+if (userType == 1) {
+string userID, pin;
+cout << "Enter User ID: ";
+cin >> userID;
+User *currentUser = nullptr;
+for (auto &u : users) {
+if (u.getID() == userID) {
+currentUser = &u;
+break;
+}
+}
+if (!currentUser) {
+cout << "User not found!\n";
+return 0;
+}
+
+cout << "Enter PIN: ";
+cin >> pin;
+if (!currentUser->verifyPin(pin)) {
+cout << "Incorrect PIN!\n";
+return 0;
+}
+int choice;
+do {
+cout << "\n---ATM Menu---\n";
+cout << "1. Show Info\n";
+cout << "2. Deposit\n";
+cout << "3. Withdraw\n";
+cout << "4. Change Name\n";
+cout << "5. Exit\n";
+cout << "Enter choice: ";
+cin >> choice;
+
+switch (choice) {
+case 1:
+currentUser->showInfo();
+break;
+case 2: {
+double amt;
+cout << "Enter amount to deposit: ";
+cin >> amt;
+currentUser->deposit(amt);
+break;
+}
+case 3: {
+double amt;
+cout << "Enter amount to withdraw: ";
+cin >> amt;
+currentUser->withdraw(amt);
+break;
+}
+case 4: {
+string newName;
+cout << "Enter new name: ";
+cin >> newName;
+currentUser->changeName(newName);
+break;
+}
+case 5:
+cout << "Exiting...\n";
+break;
+default:
+cout << "Invalid choice!\n";
+}
+} while (choice != 5);
+} else if (userType == 2) {
+int choice;
+do {
+cout << "\n---Admin Menu---\n";
+cout << "1. Show all users\n";
+cout << "2. Reset a user's balance\n";
+cout << "3. Exit\n";
+cout << "Enter choice: ";
+cin >> choice;
+switch (choice) {
+case 1:
+admin.showAllUsers(users);
+break;
+case 2: {
+string uid;
+double newBal;
+cout << "Enter User ID to reset balance: ";
+cin >> uid;
+cout << "Enter new balance: ";
+cin >> newBal;
+admin.resetUserBalance(users, uid, newBal);
+break;
+}
+case 3:
+cout << "Exiting Admin menu.\n";
+break;
+default:
+cout << "Invalid choice!\n";
+}
+} while (choice != 3);
+}
+return 0;
+}
+
